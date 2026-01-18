@@ -1,0 +1,8 @@
+markdownify
+pypandoc
+beautifulsoup4
+lxml
+requests
+Pillow
+boto3
+GitPython
