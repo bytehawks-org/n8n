@@ -6,3 +6,5 @@ requests
 Pillow
 boto3
 GitPython
+setuptools 
+wheel

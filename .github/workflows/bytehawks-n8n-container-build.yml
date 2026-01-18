@@ -1,4 +1,4 @@
-name: Build and Push NiFi Custom Image
+name: Build and Push n8n Custom Image
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  # Usiamo github.repository per GHCR, ma non per Docker Hub
+  # Nome dell'immagine (es. bytehawks-org/n8n)
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
@@ -23,19 +23,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # ========================================================
+      # LOGICA DI VERSIONAMENTO
+      # Trasforma il tag git (es. v2.3.6-bh1) in:
+      # - VERSION: 2.3.6-bh1 (Versione finale dell'immagine)
+      # - BASE_N8N_VERSION: 2.3.6 (Versione di n8n da installare)
+      # ========================================================
       - name: Extract versions
         id: get_version
         run: |
-          # 1. Rimuoviamo il prefisso 'v' (es. v2.7.2-1 -> 2.7.2-1)
+          # 1. Rimuoviamo il prefisso 'v'
           CLEAN_REF=${GITHUB_REF#refs/tags/v}
           echo "VERSION=${CLEAN_REF}" >> $GITHUB_OUTPUT
           
-          # 2. Estraiamo la versione base.
-          # La sintassi %%-* dice: "Rimuovi la parte finale che inizia con il primo trattino -"
-          # Se il tag è 2.7.2-1 -> diventa 2.7.2
-          # Se il tag è 2.7.2   -> rimane 2.7.2 (retrocompatibile)
+          # 2. Estraiamo la versione base di n8n prima del trattino
+          # Se tag = v2.3.6-bh1 -> BASE = 2.3.6
+          # Se tag = v2.3.6     -> BASE = 2.3.6
           BASE=${CLEAN_REF%%-*}
-          echo "BASE_NIFI_VERSION=${BASE}" >> $GITHUB_OUTPUT
+          echo "BASE_N8N_VERSION=${BASE}" >> $GITHUB_OUTPUT
 
       - name: Log in to the Container registry (GHCR)
         uses: docker/login-action@v3
@@ -64,6 +69,7 @@ jobs:
             type=raw,value=${{ steps.get_version.outputs.VERSION }}
             type=raw,value=latest
             type=sha
+            # Questo pattern è utile se vuoi taggare anche "bh-2.3.6"
             type=semver,pattern=bh-{{version}},value=${{ steps.get_version.outputs.VERSION }}
             
       - name: Build and push Docker image
@@ -75,9 +81,11 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # Qui passiamo le ARG al Dockerfile
           build-args: |
-            NIFI_VERSION=${{ steps.get_version.outputs.BASE_NIFI_VERSION }}
+            N8N_VERSION=${{ steps.get_version.outputs.BASE_N8N_VERSION }}
             IMAGE_VERSION=${{ steps.get_version.outputs.VERSION }}
+            NODE_VERSION=22
 
       # === Security Scanning with Trivy ===
 
@@ -89,6 +97,7 @@ jobs:
           output: 'trivy-results.sarif'
           scanners: 'vuln'
           ignore-unfixed: true
+          # Scannerizza tutto, ma segnala solo le gravi
           severity: 'CRITICAL,HIGH'
 
       - name: Upload Trivy scan results to GitHub Security tab
@@ -96,11 +105,12 @@ jobs:
         with:
           sarif_file: 'trivy-results.sarif'
 
-      - name: Check for Critical Vulnerabilities
+      - name: Check for Critical Vulnerabilities (Console Log)
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.get_version.outputs.VERSION }}'
           format: 'table'
-          exit-code: '0' # By default no fail if Critical vulnerabilities found
+          # Imposta a '1' se vuoi far fallire la build in caso di criticità
+          exit-code: '0' 
           ignore-unfixed: true
           severity: 'CRITICAL'
