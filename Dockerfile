@@ -93,7 +93,7 @@ RUN apk add --no-cache \
 # Copia n8n compilato dal builder
 COPY --from=builder /usr/local/lib/node_modules /usr/local/lib/node_modules
 COPY --from=builder /usr/local/bin/n8n /usr/local/bin/n8n
-RUN ln -s /usr/local/lib/node_modules/n8n/bin/n8n /usr/local/bin/n8n
+#RUN ln -s /usr/local/lib/node_modules/n8n/bin/n8n /usr/local/bin/n8n
 
 
 
