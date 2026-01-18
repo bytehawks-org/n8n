@@ -47,6 +47,14 @@ ENV N8N_PORT=5678
 ENV N8N_USER_ID=1000
 ENV N8N_Editor_Is_Session_Based=true
 
+# Setup directory
+RUN mkdir -p /home/node/.n8n /home/node/n8n-data && \
+    chown -R node:node /home/node/.n8n /home/node/n8n-data
+
+# Script di entrypoint (vedi sotto, è fondamentale)
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
 WORKDIR /home/node/n8n-data
 
 # --- INSTALLAZIONE PACCHETTI ---
@@ -70,7 +78,6 @@ RUN apk add --no-cache \
     openssl \
     python3 \
     py3-pip \
-    py3-venv \
     pandoc \
     git \
     bash \
@@ -88,13 +95,7 @@ COPY --from=builder /usr/local/lib/node_modules /usr/local/lib/node_modules
 COPY --from=builder /usr/local/bin/n8n /usr/local/bin/n8n
 RUN ln -s /usr/local/lib/node_modules/n8n/bin/n8n /usr/local/bin/n8n
 
-# Script di entrypoint (vedi sotto, è fondamentale)
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
 
-# Setup directory
-RUN mkdir -p /home/node/.n8n /home/node/n8n-data && \
-    chown -R node:node /home/node/.n8n /home/node/n8n-data
 
 ENV VIRTUAL_ENV=/home/node/.venv
 RUN python3 -m venv $VIRTUAL_ENV && \
