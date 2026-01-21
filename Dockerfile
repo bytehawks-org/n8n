@@ -10,6 +10,10 @@ ARG NODE_VERSION=22
 # Usiamo Node 22 Alpine come l'originale
 FROM node:${NODE_VERSION}-alpine AS builder
 
+ARG N8N_VERSION
+ARG IMAGE_VERSION
+ARG NODE_VERSION
+
 WORKDIR /tmp
 
 # Installiamo i tool di compilazione necessari per le dipendenze native di n8n
@@ -32,6 +36,10 @@ RUN npm install -g n8n@${N8N_VERSION} --unsafe-perm --production
 # STAGE 2: Final Image (Specular to Community)
 # ==========================================
 FROM node:${NODE_VERSION}-alpine
+
+ARG N8N_VERSION
+ARG IMAGE_VERSION
+ARG NODE_VERSION
 
 # Metadata standard OCI
 LABEL org.opencontainers.image.title="Bytehawks n8n custom image with Python Support"
@@ -91,22 +99,21 @@ RUN apk add --no-cache \
     ca-certificates
 
 # Copia n8n compilato dal builder
-COPY --from=builder /usr/local/lib/node_modules/n8n /usr/local/lib/node_modules/
+COPY --from=builder /usr/local/lib/node_modules/n8n /usr/local/lib/node_modules/n8n
 RUN ln -s /usr/local/lib/node_modules/n8n/bin/n8n /usr/local/bin/n8n && \
     chmod +x /usr/local/bin/n8n /usr/local/lib/node_modules/n8n/bin/n8n
 
-ENV VIRTUAL_ENV=/home/node/.venv
-RUN python3 -m venv $VIRTUAL_ENV && \
-    chown -R node:node $VIRTUAL_ENV
-
 USER node
 
-ENV PATH="$VIRTUAL_ENV:$PATH"
+ENV VIRTUAL_ENV=/home/node/.venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
-COPY --chown=node:node requirements.txt ${VIRTUAL_ENV}/requirements.txt
+COPY --chown=node:node requirements.txt /tmp/requirements.txt
 
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r ${VIRTUAL_ENV}/requirements.txt
+RUN python3 -m venv $VIRTUAL_ENV && \
+    pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r /tmp/requirements.txt && \
+    rm -f /tmp/requirements.txt
 
 EXPOSE 5678
 
