@@ -14,19 +14,19 @@ This repository contains a custom build of [n8n](https://n8n.io/) by Bytehawks, 
 ## How to Build the Image
 
 ```sh
-docker build -t bytehawks/n8n:custom .
+docker build -t bytehawks/n8n:{TAG} .
 ```
 
 ## How to Run the Container
 
 ```sh
-docker run -it --rm -p 5678:5678 bytehawks/n8n:custom
+docker run -it --rm -p 5678:5678 bytehawks/n8n:{TAG}
 ```
 
 To pass custom arguments (e.g. worker):
 
 ```sh
-docker run -it --rm bytehawks/n8n:custom worker
+docker run -it --rm bytehawks/n8n:{TAG} worker
 ```
 
 ## Custom Certificate Management
