@@ -1,6 +1,7 @@
 #!/bin/sh
+set -e # Interrompi se un comando fallisce
 
-# Gestione certificati custom (logica ufficiale n8n)
+# Gestione certificati custom
 if [ -d /opt/custom-certificates ]; then
   echo "Trusting custom certificates from /opt/custom-certificates."
   export NODE_OPTIONS="--use-openssl-ca $NODE_OPTIONS"
@@ -8,10 +9,15 @@ if [ -d /opt/custom-certificates ]; then
   c_rehash /opt/custom-certificates
 fi
 
-if [ "$#" -gt 0 ]; then
-  # Se sono stati passati argomenti al container (es: "n8n worker")
-  exec n8n "$@"
-else
-  # Se non ci sono argomenti, avvia n8n standard
-  exec n8n
+# Se il primo argomento è "n8n", lo rimuoviamo per evitare "n8n n8n"
+if [ "$1" = 'n8n' ]; then
+  shift
 fi
+
+# Se non ci sono argomenti o se iniziano con un trattino (opzioni)
+if [ $# -eq 0 ] || [ "${1#-}" != "$1" ]; then
+  exec /usr/local/bin/n8n "$@"
+fi
+
+# Altrimenti esegui quello che è stato passato (es: n8n worker)
+exec "$@"

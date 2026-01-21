@@ -99,9 +99,10 @@ RUN apk add --no-cache \
     ca-certificates
 
 # Copia n8n compilato dal builder
-COPY --from=builder /usr/local/lib/node_modules/n8n /usr/local/lib/node_modules/n8n
-RUN ln -s /usr/local/lib/node_modules/n8n/bin/n8n /usr/local/bin/n8n && \
-    chmod +x /usr/local/bin/n8n /usr/local/lib/node_modules/n8n/bin/n8n
+COPY --from=builder /usr/local/lib/node_modules /usr/local/lib/node_modules
+COPY --from=builder /usr/local/bin/n8n /usr/local/bin/n8n
+RUN chmod +x /usr/local/bin/n8n && \
+    ls -la /usr/local/bin/n8n && file /usr/local/bin/n8n || true
 
 USER node
 
@@ -120,6 +121,7 @@ EXPOSE 5678
 VOLUME ["/home/node/.n8n", "/home/node/n8n-data"]
 
 ENTRYPOINT ["/sbin/tini", "--", "/docker-entrypoint.sh"]
+
 CMD ["n8n"]
 
 
