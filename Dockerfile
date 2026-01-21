@@ -42,12 +42,12 @@ ARG IMAGE_VERSION
 ARG NODE_VERSION
 
 # Metadata standard OCI
-LABEL org.opencontainers.image.title="Bytehawks n8n custom image with Python Support"
-LABEL org.opencontainers.image.description="n8n ${N8N_VERSION} customized by ByteHawks. BH Version ${IMAGE_VERSION}"
-LABEL org.opencontainers.image.authors="Matteo Kutufa <mk@bytehawks.org>"
-LABEL org.opencontainers.image.source="https://github.com/bytehawks-org/n8n"
-LABEL org.opencontainers.image.version="${IMAGE_VERSION}"
-LABEL org.opencontainers.image.licenses="Apache-2.0"
+LABEL org.opencontainers.image.title="Bytehawks n8n custom image with Python Support" \
+      org.opencontainers.image.description="n8n ${N8N_VERSION} customized by ByteHawks. BH Version ${IMAGE_VERSION}" \
+      org.opencontainers.image.authors="Matteo Kutufa <mk@bytehawks.org>" \
+      org.opencontainers.image.source="https://github.com/bytehawks-org/n8n" \
+      org.opencontainers.image.version="${IMAGE_VERSION}" \
+      org.opencontainers.image.licenses="Apache-2.0"
 
 # ENV standard di n8n
 ENV NODE_ENV=production
@@ -102,12 +102,19 @@ RUN apk add --no-cache \
 COPY --from=builder /usr/local/lib/node_modules /usr/local/lib/node_modules
 COPY --from=builder /usr/local/bin/n8n /usr/local/bin/n8n
 RUN chmod +x /usr/local/bin/n8n && \
+    chmod -R 755 /usr/local/lib/node_modules /usr/local/bin && \
+    chown -R root:root /usr/local/lib/node_modules && \    
     ls -la /usr/local/bin/n8n && file /usr/local/bin/n8n || true
+
+ENV NODE_PATH=/usr/local/lib/node_modules
+ENV PATH="/usr/local/bin:$PATH"
+
 
 USER node
 
 ENV VIRTUAL_ENV=/home/node/.venv
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+ENV PATH="$VIRTUAL_ENV/bin:/usr/local/bin:$PATH"
+ENV NODE_PATH=/usr/local/lib/node_modules
 
 COPY --chown=node:node requirements.txt /tmp/requirements.txt
 
